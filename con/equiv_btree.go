@@ -72,7 +72,7 @@ func Same(t1, t2 *tree.Tree) bool {
 	for ok1 && ok2 {
 		v1, ok1 = <-ch1
 		v2, ok2 = <-ch2
-		if (ok1 != ok2) || (v1 != v2) {
+		if ok1 != ok2 || v1 != v2 {
 			return false
 		}
 	}

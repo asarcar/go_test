@@ -19,7 +19,7 @@ type Struct struct {
 }
 
 func (s Struct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%s%s %s\n", s.Greeting, s.Punct, s.Who)
+	fmt.Fprintf(w, "%s%s %s: %s\n", s.Greeting, s.Punct, s.Who, r.URL.Path[1:])
 }
 
 func MyFunc(w http.ResponseWriter, r *http.Request) {
