@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<head>
+  <title>Add Moustache To Image</title>
+  <meta charset = "UTF-8" />
+</head>
+<body>
+  <h2>Add Moustache: Choose slider values for effect </h2>
+  <p>
+    x&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp = <input type="range" min="60000" max="90000" value="74000" step="2000" onchange="showXValue(this.value)" />
+    <span id="X">74000</span>
+    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+    y&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp = <input type="range" min="120000" max="160000" value="140000" step="10000" onchange="showYValue(this.value)" />
+    <span id="Y">140000</span>
+  </p>
+  <p>
+    size&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp= <input type="range" min="1000" max="3000" value="2000" step="200" onchange="showSValue(this.value)" />
+    <span id="S">2000</span>
+    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+    droopfactor = <input type="range" min="-20" max="20" value="0" step="2" onchange="showDValue(this.value)" />
+    <span id="D">0</span>
+  </p>  
+  <p>Image: <i id="I">/img?id={{.}}&x=74000&y=140000&s=2000&d=0</i></p> 
+  <p>
+    <img src = "/img?id={{.}}&x=74000&y=140000&s=2000&d=0"
+         alt = "Picture" 
+	 style ="width:400px;height:600px" 
+	 id = "imgurl" />
+  </p>
+  <script type="text/javascript">
+    function setImgUrl() {
+    var image_url = "/img?id={{.}}" + 
+    "&x=" + document.getElementById("X").innerHTML + 
+    "&y=" + document.getElementById("Y").innerHTML + 
+    "&s=" + document.getElementById("S").innerHTML + 
+    "&d=" + document.getElementById("D").innerHTML;
+    document.getElementById("I").innerHTML = image_url;
+    document.getElementById("imgurl").src = image_url;
+    }
+    function showXValue(newValue) {
+    document.getElementById("X").innerHTML=newValue; setImgUrl();
+    }
+    function showYValue(newValue) {
+    document.getElementById("Y").innerHTML=newValue; setImgUrl();
+    }
+    function showSValue(newValue) {
+    document.getElementById("S").innerHTML=newValue; setImgUrl();
+    }
+    function showDValue(newValue) {
+    document.getElementById("D").innerHTML=newValue; setImgUrl();
+    }
+  </script>
+</body>
+</html>
