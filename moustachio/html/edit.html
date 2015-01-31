@@ -1,53 +1,56 @@
 <!DOCTYPE HTML>
 <head>
-  <title>Add Moustache To Image</title>
+  <title>Moustache Image</title>
+  <script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
   <meta charset = "UTF-8" />
+  <script type="text/javascript">
+    var fn = function() {
+      var id     = "{{.}}";
+      var img    = "/img?";
+      var share  = "/share?";
+
+      var x      = 0;
+      var y      = 0;
+
+      var $pic   = $("#pic");
+      var $url   = $("#url");
+      var $s     = $("#size");
+      var $d     = $("#droop");
+      var $surl  = $("a.surl");
+
+      function update() {
+        var query       = "id="+id+"&x="+x+"&y="+y+"&s="+$s.val()+"&d="+$d.val();
+        var image_query = img+query;
+        var share_query = share+query;
+        $url.text(image_query);
+        $pic.attr("src", image_query);
+        $surl.attr("href", share_query);
+      }
+
+      var pic_click = function(e) {
+        x = e.pageX - this.offsetLeft;
+        y = e.pageY - this.offsetTop;
+        update();
+      }
+
+      $pic.click(pic_click);
+      $s.bind("mouseup", update);
+      $d.bind("mouseup", update);
+
+      update();
+    }
+    $(document).ready(fn);
+  </script>
 </head>
 <body>
   <h2>Add Moustache: Choose slider values for effect </h2>
+  <p>Image: <code id="url" /></p>
   <p>
-    x&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp = <input type="range" min="60000" max="90000" value="74000" step="2000" onchange="showXValue(this.value)" />
-    <span id="X">74000</span>
-    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-    y&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp = <input type="range" min="120000" max="160000" value="140000" step="10000" onchange="showYValue(this.value)" />
-    <span id="Y">140000</span>
+    <input id="size" type="range" min="-10" max="10" step="1" value="0">
+    <input id="droop" type="range" min="-30" max="30" step="1" value="0">
+    <a class="surl" href="#">Upload Image</a>
   </p>
-  <p>
-    size&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp= <input type="range" min="1000" max="3000" value="2000" step="200" onchange="showSValue(this.value)" />
-    <span id="S">2000</span>
-    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-    droopfactor = <input type="range" min="-20" max="20" value="0" step="2" onchange="showDValue(this.value)" />
-    <span id="D">0</span>
-  </p>  
-  <p>Image: <i id="I">/img?id={{.}}&x=74000&y=140000&s=2000&d=0</i></p> 
-  <p>
-    <img src = "/img?id={{.}}&x=74000&y=140000&s=2000&d=0"
-         alt = "Picture" 
-	 style ="width:400px;height:600px" 
-	 id = "imgurl" />
-  </p>
-  <script type="text/javascript">
-    function setImgUrl() {
-    var image_url = "/img?id={{.}}" + 
-    "&x=" + document.getElementById("X").innerHTML + 
-    "&y=" + document.getElementById("Y").innerHTML + 
-    "&s=" + document.getElementById("S").innerHTML + 
-    "&d=" + document.getElementById("D").innerHTML;
-    document.getElementById("I").innerHTML = image_url;
-    document.getElementById("imgurl").src = image_url;
-    }
-    function showXValue(newValue) {
-    document.getElementById("X").innerHTML=newValue; setImgUrl();
-    }
-    function showYValue(newValue) {
-    document.getElementById("Y").innerHTML=newValue; setImgUrl();
-    }
-    function showSValue(newValue) {
-    document.getElementById("S").innerHTML=newValue; setImgUrl();
-    }
-    function showDValue(newValue) {
-    document.getElementById("D").innerHTML=newValue; setImgUrl();
-    }
-  </script>
+  <p>Click the image to place the moustache.</p>
+  <img id="pic" />
 </body>
 </html>

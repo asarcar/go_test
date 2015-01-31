@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      ul {
+        width: 36em
+      }
+      .right {
+        float: right
+      }
+    </style>
+  </head>
+  <body>
+    <p> 
+      GDrive Upload Successful: 
+      <a href="/fetch?id={{.ID}}"> Image </a> 
+    </p>
+    <p>
+      <ul>
+	<li>FileId       <span class="right">"{{.ID}}"</span></li>
+	<li>Title        <span class="right">"{{.Title}}"</span></li>
+	<li>Description  <span class="right">"{{.Description}}"</span></li>
+	<li>MimeType     <span class="right">"{{.MimeType}}"</span></li>
+      </ul>
+    </p> 
+  </body>
+</html>
+    
