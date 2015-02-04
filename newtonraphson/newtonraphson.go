@@ -6,47 +6,95 @@ import (
 	"math"
 )
 
+type OptimizationType uint
+
+const (
+	Zero OptimizationType = iota
+	MinMax
+)
+
 type Fn func(float64) float64
 
-func SqRootFn(kValue float64) Fn {
+// Zero Point Functions
+func SqRootFn(kValue float64, t OptimizationType) Fn {
 	if kValue < 0 {
 		panic("Invalid Function")
 	}
 
+	// Optimization is Zero (FixedPoint)
+	if t == Zero {
+		return func(xValue float64) float64 {
+			return xValue*xValue - kValue
+		}
+	}
+
+	// t == MinMax
 	return func(xValue float64) float64 {
-		return xValue*xValue - kValue
+		return (xValue*xValue - kValue) * (xValue*xValue - kValue)
 	}
 }
 
-func CubeRootFn(kValue float64) Fn {
+func CubeRootFn(kValue float64, t OptimizationType) Fn {
+	// Optimization is Zero (FixedPoint)
+	if t == Zero {
+		return func(xValue float64) float64 {
+			return xValue*xValue*xValue - kValue
+		}
+	}
+
+	// t == MinMax
 	return func(xValue float64) float64 {
-		return xValue*xValue*xValue - kValue
+		return (xValue*xValue*xValue - kValue) * (xValue*xValue*xValue - kValue)
 	}
 }
 
 const (
-	StartValue          = 1.0
+	// chosen to avoid areas of curve where function converges
+	StartValue          = 32.0
 	CloseEnoughFraction = 0.0001
 	Epsilon             = 0.0001
-	MaxIterations       = 10
+	MaxIterations       = 16
 )
 
-func SolveNewtonRaphson(f Fn) float64 {
+func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 	// Terminates loop when value does not change measurably
 	closeFn := func(newV, prevV float64) bool {
 		return math.Abs(newV-prevV) < math.Abs(prevV*CloseEnoughFraction)
 	}
 
-	// Derivative Function Computation
-	derF := func(val float64) float64 {
-		return (f(val+Epsilon) - f(val-Epsilon)) / (2 * Epsilon)
+	// Choose the Function whose derivate needs to be computed
+	derF := func(fn Fn) Fn {
+		return func(val float64) float64 {
+			return (fn(val+Epsilon) - fn(val-Epsilon)) / (2 * Epsilon)
+		}
 	}
 
+	// Derivative Function
+	dF := derF(f)
+	// Derivative of Derivative Function
+	d2F := derF(dF)
+
 	// computes next iteration of Netwon Raphson value
+
+	// Linear Variant
 	// x(t+1) = x(t) -  f(x(t))/f'(x(t))
-	nrFn := func(x float64) float64 {
-		return x - (f(x) / derF(x))
+	nrLinearFn := func(x float64) float64 {
+		return x - (f(x) / dF(x))
 	}
+
+	// Quadratic Variant
+	// x(t+1) = x(t) - f'(x(t))/f''(x(t))
+	nrQuadraticFn := func(x float64) float64 {
+		return x - (dF(x) / d2F(x))
+	}
+
+	// choose function based on Optimization Type:
+	nrFn := func(opt OptimizationType) Fn {
+		if t == Zero {
+			return nrLinearFn
+		}
+		return nrQuadraticFn
+	}(t)
 
 	prevValue, newValue := StartValue, nrFn(StartValue)
 	for i := 0; i < MaxIterations; i++ {
@@ -73,9 +121,17 @@ func main() {
 	fPtr := flag.Float64("v", 64.0, "value to square root\n")
 	val := *fPtr
 
-	fmt.Printf("Square Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(SqRootFn(val)))
+	t := Zero
+	fmt.Println("Linear Method - Computes Zero Point: ")
+	fmt.Printf("  Square Root of %0.2f is %0.4f\n",
+		*fPtr, SolveNewtonRaphson(SqRootFn(val, t), t))
+	fmt.Printf("  Cube Root of %0.2f is %0.4f\n",
+		*fPtr, SolveNewtonRaphson(CubeRootFn(val, t), t))
 
-	fmt.Printf("Cube Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(CubeRootFn(val)))
+	t = MinMax
+	fmt.Println("Quadratic Method - Computes Minimum or Maximum Point: ")
+	fmt.Printf("  Square Root of %0.2f is %0.4f\n",
+		*fPtr, SolveNewtonRaphson(SqRootFn(val, t), t))
+	fmt.Printf("  Cube Root of %0.2f is %0.4f\n",
+		*fPtr, SolveNewtonRaphson(CubeRootFn(val, t), t))
 }
