@@ -1,7 +1,6 @@
-package main
+package newmath
 
 import (
-	"flag"
 	"fmt"
 	"math"
 )
@@ -9,59 +8,25 @@ import (
 type OptimizationType uint
 
 const (
-	Zero OptimizationType = iota
-	MinMax
+	ZeroPoint OptimizationType = iota
+	MinMaxPoint
 )
 
 type Fn func(float64) float64
 
-// Zero Point Functions
-func SqRootFn(kValue float64, t OptimizationType) Fn {
-	if kValue < 0 {
-		panic("Invalid Function")
-	}
-
-	// Optimization is Zero (FixedPoint)
-	if t == Zero {
-		return func(xValue float64) float64 {
-			return xValue*xValue - kValue
-		}
-	}
-
-	// t == MinMax
-	return func(xValue float64) float64 {
-		return (xValue*xValue - kValue) * (xValue*xValue - kValue)
-	}
-}
-
-func CubeRootFn(kValue float64, t OptimizationType) Fn {
-	// Optimization is Zero (FixedPoint)
-	if t == Zero {
-		return func(xValue float64) float64 {
-			return xValue*xValue*xValue - kValue
-		}
-	}
-
-	// t == MinMax
-	return func(xValue float64) float64 {
-		return (xValue*xValue*xValue - kValue) * (xValue*xValue*xValue - kValue)
-	}
-}
-
 const (
 	// chosen to avoid areas of curve where function converges
-	StartValue          = 32.0
-	CloseEnoughFraction = 0.0001
-	Epsilon             = 0.0001
-	MaxIterations       = 16
+	StartValue       = 1.0
+	ApproxEqualError = 0.0001
+	Epsilon          = 0.0001
+	MaxIterations    = 16
 )
 
-func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
-	// Terminates loop when value does not change measurably
-	closeFn := func(newV, prevV float64) bool {
-		return math.Abs(newV-prevV) < math.Abs(prevV*CloseEnoughFraction)
-	}
+func ApproxEqual(newV, prevV float64) bool {
+	return math.Abs(newV-prevV) < math.Abs(prevV*ApproxEqualError)
+}
 
+func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 	// Choose the Function whose derivate needs to be computed
 	derF := func(fn Fn) Fn {
 		return func(val float64) float64 {
@@ -90,7 +55,7 @@ func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 
 	// choose function based on Optimization Type:
 	nrFn := func(opt OptimizationType) Fn {
-		if t == Zero {
+		if t == ZeroPoint {
 			return nrLinearFn
 		}
 		return nrQuadraticFn
@@ -98,7 +63,7 @@ func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 
 	prevValue, newValue := StartValue, nrFn(StartValue)
 	for i := 0; i < MaxIterations; i++ {
-		if closeFn(newValue, prevValue) {
+		if ApproxEqual(newValue, prevValue) {
 			return prevValue
 		}
 
@@ -115,6 +80,7 @@ func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 	return 0.0
 }
 
+/*
 func main() {
 	flag.Parse()
 
@@ -135,3 +101,4 @@ func main() {
 	fmt.Printf("  Cube Root of %0.2f is %0.4f\n",
 		*fPtr, SolveNewtonRaphson(CubeRootFn(val, t), t))
 }
+*/
