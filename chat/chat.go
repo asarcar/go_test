@@ -73,8 +73,6 @@ func socketHandler(ws *websocket.Conn) {
 var pair = make(chan io.ReadWriteCloser)
 
 func matchChat(c io.ReadWriteCloser) {
-	fmt.Fprint(c, "Waiting for pair... ")
-
 	// Channel where termination of chat is received
 	errc := make(chan error)
 
@@ -105,7 +103,7 @@ func matchChat(c io.ReadWriteCloser) {
 }
 
 func cp(c, p io.ReadWriteCloser, errc chan<- error) { // write only channel
-	fmt.Fprint(c, "Matched!\n")
+	fmt.Fprint(c, "Chat Session Established!\n")
 	_, err := io.Copy(c, p)
 	errc <- err
 }

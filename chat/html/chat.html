@@ -9,6 +9,7 @@
         var form = $("#form");
         var msg = $("#msg");
         var log = $("#log");
+        var log2 = $("#log2");
 
         function appendLog(msg) {
           var d = log[0]
@@ -18,18 +19,32 @@
             d.scrollTop = d.scrollHeight - d.clientHeight;
           }
         }
+        function appendLog2(msg) {
+          var d = log2[0]
+          var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+          msg.appendTo(log2)
+          if (doScroll) {
+            d.scrollTop = d.scrollHeight - d.clientHeight;
+          }
+        }
+        appendLog($("<div/>").text("PEER CHAT MSGs RECEIVED"))
+        appendLog($("<div/>").text("------------------------------------------"))
+        appendLog2($("<div/>").text("MY CHAT MSGs SENT"))
+        appendLog2($("<div/>").text("-----------------------------------------"))
+
         var submit_fn = function() {
           if (!msg.val()) {
             return false;
           }
           websocket.send(msg.val())
+          appendLog2($("<div/>").text(msg.val()))
           msg.val("");
           return false;
         }
         form.submit(submit_fn);
 
         var chat_close_fn = function(evt) {
-          appendLog($("<div/>").text("Connection closed"))
+          appendLog($("<div/>").text("Peer Connection closed"))
         } 
         var chat_msg_fn   = function(evt) {
           appendLog($("<div/>").text(evt.data))
@@ -40,6 +55,7 @@
           websocket.onmessage = chat_msg_fn
         } else {
           appendLog($("<div/>").text("Browser doesn't support WebSockets."))
+          appendLog2($("<div/>").text("Browser doesn't support WebSockets."))
         }
       }
       $(document).ready(init_fn);
@@ -63,8 +79,19 @@
         position:    absolute;
         top:         0.5em;
         left:        0.5em;
+        bottom:      3em;
+        width:       45%;
+        overflow:    auto;
+      }
+      #log2 {
+        background:  white;
+        margin:      0;
+        padding:     0.5em 0.5em 0.5em 0.5em;
+        position:    absolute;
+        top:         0.5em;
         right:       0.5em;
         bottom:      3em;
+        width:       45%;
         overflow:    auto;
       }
       #form {
@@ -80,6 +107,7 @@
   </head>
   <body>
     <div id="log"></div>
+    <div id="log2"></div>
     <form id="form">
       <input type="submit" value="Send" />
       <input type="text" id="msg" size="64" />
