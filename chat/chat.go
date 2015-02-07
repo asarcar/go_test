@@ -1,60 +1,78 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
+	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
-	"net"
+	"net/http"
 )
+
+func main() {
+	setGlobals()
+	setHandleFuncs()
+}
+
+func setGlobals() {
+	htmlDir := parseFlags()
+	gChatTemplate = getTemplate(htmlDir, "chat.html")
+}
 
 const (
 	listenAddr = "localhost:4000"
 )
 
-func main() {
-	log.Println("Chat Daemon Started...")
+func setHandleFuncs() {
+	http.HandleFunc("/", rootHandler)
+	http.Handle("/chat", websocket.Handler(socketHandler))
 
-	l := getListener()
-	defer l.Close()
-
-	// Keep looping wait for pair of interested chatters
-	for {
-		spawnPartners(l)
-	}
-
-	log.Println("Chat Daemon Stopped.")
-
-	return
+	log.Println("Chat Server Started...")
+	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
-func getListener() *net.TCPListener {
-	// Network Service example
-	addr, err := net.ResolveTCPAddr("tcp", listenAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return l
+var gChatTemplate *template.Template
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	gChatTemplate.Execute(w, listenAddr)
 }
 
-func spawnPartners(l *net.TCPListener) {
-	// Channel where pairing channel received/sent
-	pair := make(chan io.ReadWriteCloser)
-
-	for i := 0; i < 2; i++ {
-		// Spawn pair of sessions to allow chat
-		c, err := l.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-		go matchChat(c, pair)
-	}
+type socket struct {
+	// A pass through for read/write can also be implemented by
+	// simply listing the interface name: io.ReadWriter
+	// io.ReadWriter
+	conn *websocket.Conn
+	done chan bool
 }
 
-func matchChat(c io.ReadWriteCloser, pair chan io.ReadWriteCloser) {
+func (s socket) Read(msg []byte) (n int, err error) {
+	return s.conn.Read(msg)
+}
+
+func (s socket) Write(msg []byte) (n int, err error) {
+	return s.conn.Write(msg)
+}
+
+func (s socket) Close() error {
+	s.done <- true
+	s.conn.Close()
+	return nil
+}
+
+// websocket.Conn is held open by its handler function
+// The handler is kept running using the channel receive
+// until an explicit Close is called on the socket
+func socketHandler(ws *websocket.Conn) {
+	s := socket{conn: ws, done: make(chan bool)}
+	go matchChat(s)
+	<-s.done
+}
+
+// Channel where pairing channel received/sent
+var pair = make(chan io.ReadWriteCloser)
+
+func matchChat(c io.ReadWriteCloser) {
 	fmt.Fprint(c, "Waiting for pair... ")
 
 	// Channel where termination of chat is received
@@ -90,4 +108,22 @@ func cp(c, p io.ReadWriteCloser, errc chan<- error) { // write only channel
 	fmt.Fprint(c, "Matched!\n")
 	_, err := io.Copy(c, p)
 	errc <- err
+}
+
+func parseFlags() string {
+	flag.Parse()
+	dPtr := flag.String("d",
+		"/home/asarcar/git/go_test/src/github.com/asarcar/go_test/chat/html/",
+		"full path to directory where template html files exit\n")
+
+	return *dPtr
+}
+
+func getTemplate(dirPath, fileName string) *template.Template {
+	f := dirPath + fileName
+	t, err := template.ParseFiles(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return t
 }
