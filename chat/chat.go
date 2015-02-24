@@ -181,10 +181,10 @@ func cp(c, p io.ReadWriteCloser, errc chan<- error) { // write only channel
 }
 
 func parseFlags() string {
-	flag.Parse()
 	dPtr := flag.String("d",
 		"/home/asarcar/git/go_test/src/github.com/asarcar/go_test/chat/html/",
 		"full path to directory where template html files exit\n")
+	flag.Parse()
 
 	return *dPtr
 }

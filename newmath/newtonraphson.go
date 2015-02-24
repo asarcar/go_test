@@ -79,26 +79,3 @@ func SolveNewtonRaphson(f Fn, t OptimizationType) float64 {
 
 	return 0.0
 }
-
-/*
-func main() {
-	flag.Parse()
-
-	fPtr := flag.Float64("v", 64.0, "value to square root\n")
-	val := *fPtr
-
-	t := Zero
-	fmt.Println("Linear Method - Computes Zero Point: ")
-	fmt.Printf("  Square Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(SqRootFn(val, t), t))
-	fmt.Printf("  Cube Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(CubeRootFn(val, t), t))
-
-	t = MinMax
-	fmt.Println("Quadratic Method - Computes Minimum or Maximum Point: ")
-	fmt.Printf("  Square Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(SqRootFn(val, t), t))
-	fmt.Printf("  Cube Root of %0.2f is %0.4f\n",
-		*fPtr, SolveNewtonRaphson(CubeRootFn(val, t), t))
-}
-*/

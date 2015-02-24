@@ -331,13 +331,13 @@ func checkError(err error) {
 }
 
 func parseFlags() (htmlDirPath string, tmpDirPath string) {
-	flag.Parse()
 	dPtr := flag.String("d",
 		"/home/asarcar/git/go_test/src/github.com/asarcar/go_test/moustachio/html/",
 		"full path to directory where template html files exit\n")
 	tPtr := flag.String("t",
 		"/home/asarcar/tmp/",
 		"full path for temporay directory where image file would be saved\n")
+	flag.Parse()
 
 	return *dPtr, *tPtr
 }
