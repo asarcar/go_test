@@ -9,7 +9,5 @@ func main() {
 	misc.DumpStr()
 	misc.DumpGreek()
 	misc.DumpTypePrint(float32(3.200123432), 10, "hello raju", float64(3.200123432))
-	misc.DumpValue()
-	misc.DumpCompose()
 	misc.DumpMarkovWords()
 }
