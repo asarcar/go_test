@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>EchoChat Example</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"> </script>
+    <meta charset="utf-8" />
+    <script type="text/javascript">
+      var init_fn = function() {
+        var form = $("#form");
+        var msg = $("#msg");
+        var log = $("#log");
+        var log2 = $("#log2");
+        var close_button = document.getElementById("close")
+
+        function appendLog(msg) {
+          var d = log[0]
+          var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+          msg.appendTo(log)
+          if (doScroll) {
+            d.scrollTop = d.scrollHeight - d.clientHeight;
+          }
+        }
+        function appendLog2(msg) {
+          var d = log2[0]
+          var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+          msg.appendTo(log2)
+          if (doScroll) {
+            d.scrollTop = d.scrollHeight - d.clientHeight;
+          }
+        }
+        appendLog($("<div/>").text("PEER CHAT MSGs RECEIVED"))
+        appendLog($("<div/>").text("------------------------------------------"))
+        appendLog2($("<div/>").text("MY CHAT MSGs SENT"))
+        appendLog2($("<div/>").text("-----------------------------------------"))
+
+        var submit_fn = function() {
+          if (!msg.val()) {
+            return false;
+          }
+          websocket.send(msg.val())
+          appendLog2($("<div/>").text(msg.val()))
+          msg.val("");
+          return false;
+        }
+        form.submit(submit_fn);
+      
+        var chat_local_close_fn = function(evt) {
+          evt.preventDefault();
+          websocket.close();
+          appendLog2($("<div/>").text("Local Connection closed"))
+        }
+        close_button.onclick = chat_local_close_fn;
+
+        var chat_close_fn = function(evt) {
+          appendLog($("<div/>").text("Peer Connection closed"))
+        } 
+        var chat_msg_fn   = function(evt) {
+          appendLog($("<div/>").text(evt.data))
+        }
+        var chat_err_fn   = function(evt) {
+          appendLog($("<div/>").text("WebSocket Error: " + evt.error))
+          console.log("WebSocket Error: " + evt.error);
+        }
+
+        if (window["WebSocket"]) {
+          websocket = new WebSocket("ws://{{.}}");
+          websocket.onclose = chat_close_fn
+          websocket.onerror = chat_err_fn
+          websocket.onmessage = chat_msg_fn
+        } else {
+          appendLog($("<div/>").text("Browser doesn't support WebSockets."))
+          appendLog2($("<div/>").text("Browser doesn't support WebSockets."))
+        }
+      }
+      $(document).ready(init_fn);
+    </script>
+    <style type="text/css">
+      html {
+        overflow: hidden;
+      }
+      body {
+        overflow:    hidden;
+        padding:     0;
+        margin:      0;
+        width:       100%;
+        height:      100%;
+        background:  gray;
+      }
+      #log {
+        background:  white;
+        margin:      0;
+        padding:     0.5em 0.5em 0.5em 0.5em;
+        position:    absolute;
+        top:         0.5em;
+        left:        0.5em;
+        bottom:      3em;
+        width:       45%;
+        overflow:    auto;
+      }
+      #log2 {
+        background:  white;
+        margin:      0;
+        padding:     0.5em 0.5em 0.5em 0.5em;
+        position:    absolute;
+        top:         0.5em;
+        right:       0.5em;
+        bottom:      3em;
+        width:       45%;
+        overflow:    auto;
+      }
+      #form {
+        padding:     0 0.5em 0 0.5em;
+        margin:      0;
+        position:    absolute;
+        bottom:      1em;
+        left:        0px;
+        width:       100%;
+        overflow:    hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="log"></div>
+    <div id="log2"></div>
+    <form id="form">
+      <input type="button" id="close" value="Close" />
+      <input type="submit" value="Send" />
+      <input type="text" id="msg" size="64" />
+    </form>
+  </body>
+</html>

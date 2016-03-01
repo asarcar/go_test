@@ -1,10 +1,10 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"flag"
 	"fmt"
 	"github.com/asarcar/go_test/misc"
+	"golang.org/x/net/websocket"
 	"html/template"
 	"io"
 	"log"
@@ -26,7 +26,7 @@ const (
 	kListenAddr = "localhost:4000"
 	// Server allows onto to chat with a virtual bot
 	// max time before one is paired with bot
-	kMaxChatWaitTime = 10
+	kMaxChatWaitTime = 10000
 	// markov chain prefix length used to generate sentences by bot
 	kMaxPrefixLen = 2
 	// max # of words spewed at a time by bot

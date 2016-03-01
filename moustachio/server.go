@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	// TBD: migrate to github.com/golang/freetype
 	"code.google.com/p/freetype-go/freetype/raster"
+	// TBD: migrate to golang.org/oauth2/google:
 	"code.google.com/p/goauth2/oauth"
-	"code.google.com/p/google-api-go-client/drive/v2"
 	"errors"
 	"flag"
+	"google.golang.org/api/drive/v2"
 	"html/template"
 	"image"
 	"image/color"
@@ -58,6 +60,15 @@ import (
 // 6     : Authenticate
 // 7     : Post
 
+const (
+	kListenAddr     = "localhost:4000"
+	kUploadFileName = "upload.html"
+	kErrorFileName  = "error.html"
+	kEditFileName   = "edit.html"
+	kPostFileName   = "post.html"
+	kMsgFileName    = "msg.html"
+)
+
 var gUploadTemplate, gErrorTemplate *template.Template
 var gEditTemplate, gPostTemplate, gMsgTemplate *template.Template
 var gTmpDir string
@@ -65,18 +76,18 @@ var gTmpDir string
 func main() {
 	setGlobals()
 	setHandleFuncs()
-	log.Fatal(http.ListenAndServe("localhost:4000", nil))
+	log.Fatal(http.ListenAndServe(kListenAddr, nil))
 }
 
 func setGlobals() {
 	htmlDir, tmpDir := parseFlags()
 
 	gTmpDir = tmpDir
-	gUploadTemplate = getTemplate(htmlDir, "upload.html")
-	gErrorTemplate = getTemplate(htmlDir, "error.html")
-	gEditTemplate = getTemplate(htmlDir, "edit.html")
-	gPostTemplate = getTemplate(htmlDir, "post.html")
-	gMsgTemplate = getTemplate(htmlDir, "msg.html")
+	gUploadTemplate = getTemplate(htmlDir, kUploadFileName)
+	gErrorTemplate = getTemplate(htmlDir, kErrorFileName)
+	gEditTemplate = getTemplate(htmlDir, kEditFileName)
+	gPostTemplate = getTemplate(htmlDir, kPostFileName)
+	gMsgTemplate = getTemplate(htmlDir, kMsgFileName)
 }
 
 func setHandleFuncs() {
@@ -333,7 +344,7 @@ func checkError(err error) {
 func parseFlags() (htmlDirPath string, tmpDirPath string) {
 	dPtr := flag.String("d",
 		"/home/asarcar/git/go_test/src/github.com/asarcar/go_test/moustachio/html/",
-		"full path to directory where template html files exit\n")
+		"full path to directory where template html files exist\n")
 	tPtr := flag.String("t",
 		"/home/asarcar/tmp/",
 		"full path for temporay directory where image file would be saved\n")
