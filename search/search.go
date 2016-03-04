@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	// pb "github.com/asarcar/go_test/protos/search"
-
 	"golang.org/x/net/context"
 )
 
