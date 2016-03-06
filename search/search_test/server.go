@@ -37,7 +37,7 @@ func handleSearch(w http.ResponseWriter, req *http.Request) {
 		ctx    context.Context
 		cancel context.CancelFunc
 	)
-	timeout, err := time.ParseDuration(req.FormValue("timeout"))
+	timeout, err := time.ParseDuration(req.FormValue("t"))
 	if err == nil {
 		// The request has a timeout, so create a context that is
 		// canceled automatically when the timeout expires.
@@ -90,6 +90,7 @@ var resultsTemplate = template.Must(template.New("results").Parse(`
   <ol>
   {{range .Results}}
     <li>{{.Title}} - <a href="{{.URL}}">{{.URL}}</a></li>
+    Snippet: {{.Content}}
   {{end}}
   </ol>
   <p>{{len .Results}} results in {{.Elapsed}}; timeout {{.Timeout}}</p>

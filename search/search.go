@@ -19,7 +19,7 @@ type Results []Result
 
 // A Result contains the title and URL of a search result.
 type Result struct {
-	Title, URL string
+	Title, URL, Content string
 }
 
 // Search sends query to Google search and returns the results.
@@ -56,6 +56,7 @@ func Search(ctx context.Context, query string) (Results, error) {
 				Results []struct {
 					TitleNoFormatting string
 					URL               string
+					Content           string
 				}
 			}
 		}
@@ -63,7 +64,8 @@ func Search(ctx context.Context, query string) (Results, error) {
 			return err
 		}
 		for _, res := range data.ResponseData.Results {
-			results = append(results, Result{Title: res.TitleNoFormatting, URL: res.URL})
+			results = append(results,
+				Result{Title: res.TitleNoFormatting, URL: res.URL, Content: res.Content})
 		}
 		return nil
 	})
