@@ -1,0 +1,145 @@
+package main
+
+import (
+	"flag" // flag.Parse
+	"fmt"
+	"html/template"
+	"log"
+	"net"
+	"net/http"
+	"time"
+
+	"github.com/asarcar/go_test/search/backend"
+	pb "github.com/asarcar/go_test/search/protos"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+)
+
+const (
+	kClientAddr     = "localhost"
+	kServerAddr     = "localhost"
+	kClientHTTPPort = 8001
+	kServerRPCPort  = 4000
+	kSearchPath     = "/search"
+	kWatchPath      = "/watch"
+)
+
+// Server addr:port where server accepts RPC requests
+var serverRPC string
+var clientHTTP string
+var clientIP net.IP
+var client pb.GoogleClient
+
+func main() {
+	parseFlags()
+
+	fmt.Println("Client Spawned: Connecting to Server-RPC-Addr=\"" + serverRPC + "\"" +
+		": clientHTTPAddr=\"" + clientHTTP + "\"" +
+		": clientIP=\"" + clientIP.String() + "\"")
+
+	// Connect to Google Search RPC server:
+	conn, err := grpc.Dial(serverRPC, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to dial: %v", err)
+	}
+	defer conn.Close()
+	client = pb.NewGoogleClient(conn)
+
+	http.HandleFunc(kSearchPath, handleSearch)
+	http.HandleFunc(kWatchPath, handleWatch)
+
+	log.Fatal(http.ListenAndServe(clientHTTP, nil))
+}
+
+func parseFlags() {
+	serverRPCPtr := flag.String("rpcserver",
+		fmt.Sprintf("%s:%d", kServerAddr, kServerRPCPort),
+		"server RPC \"addr:port\" to connect")
+	clientHTTPPtr := flag.String("httpclient",
+		fmt.Sprintf("%s:%d", kClientAddr, kClientHTTPPort),
+		"client HTTP \"addr:port\" to connect")
+	flag.Parse()
+	serverRPC = *serverRPCPtr
+	clientHTTP = *clientHTTPPtr
+	var err error
+	if clientIP, err = backend.GetIP(clientHTTP); err != nil {
+		log.Fatalf("Bad client IP address: %v", err)
+	}
+}
+
+// handleSearch handles URLs like /search?q=golang&timeout=1s by forwarding the
+// query to google.Search. If the query param includes timeout, the search is
+// canceled after that duration elapses.
+func handleSearch(w http.ResponseWriter, req *http.Request) {
+	// QUERY
+	query := req.FormValue("q")
+	if query == "" {
+		http.Error(w, "no query", http.StatusBadRequest)
+		return
+	}
+
+	// ctx is the Context for this handler. Calling cancel closes the
+	// ctx.Done channel, which is the cancellation signal for requests
+	// started by this handler.
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	// TIMEOUT
+	timeout, err := time.ParseDuration(req.FormValue("t"))
+	// The request has a timeout, so create a context that is
+	// canceled automatically when the timeout expires.
+	if err == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	defer cancel() // Cancel ctx as soon as handleSearch returns.
+
+	// SEARCH
+	// Run the Google search and print the results.
+	start := time.Now()
+	// Req {Query}
+	rpcreq := &pb.Request{Query: query}
+	// Res {Title, Url, Content}
+	rpcres, err := client.Search(ctx, rpcreq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	elapsed := time.Since(start)
+
+	// BROWSER DISPLAY
+	if err := resultsTemplate.Execute(w, struct {
+		Results          *pb.Results
+		Timeout, Elapsed time.Duration
+	}{
+		Results: rpcres,
+		Timeout: timeout,
+		Elapsed: elapsed,
+	}); err != nil {
+		log.Print(err)
+		return
+	}
+}
+
+// handleWatch
+func handleWatch(w http.ResponseWriter, req *http.Request) {
+}
+
+var resultsTemplate = template.Must(template.New("results").Parse(`
+<html>
+<head/>
+<body>
+  <ol>
+  {{range .Results.Res}}
+    <li>{{.Title}} - <a href="{{.Url}}">{{.Url}}</a></li>
+    Snippet: {{.Content}}
+  {{end}}
+  </ol>
+  <p>result obtained in {{.Elapsed}}; timeout {{.Timeout}}</p>
+</body>
+</html>
+`))

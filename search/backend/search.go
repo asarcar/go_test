@@ -1,10 +1,12 @@
 // Package search provides a function to do Google searches using the Google Web
 // Search API. See https://developers.google.com/web-search/docs/
-package search
+package backend
 
 import (
 	"encoding/json"
 	"net/http"
+
+	pb "github.com/asarcar/go_test/search/protos"
 
 	"golang.org/x/net/context"
 )
@@ -14,16 +16,8 @@ const (
 	kGoogleSearchApiUrlStr = "https://ajax.googleapis.com/ajax/services/search/web?v=1.0"
 )
 
-// Results is an ordered list of search results.
-type Results []Result
-
-// A Result contains the title and URL of a search result.
-type Result struct {
-	Title, URL, Content string
-}
-
 // Search sends query to Google search and returns the results.
-func Search(ctx context.Context, query string) (Results, error) {
+func Search(ctx context.Context, query string) (*pb.Results, error) {
 	// Prepare the Google Search API request.
 	req, err := http.NewRequest(kGetCmdStr, kGoogleSearchApiUrlStr, nil)
 	if err != nil {
@@ -42,7 +36,7 @@ func Search(ctx context.Context, query string) (Results, error) {
 
 	// Issue the HTTP request and handle the response. The httpDo function
 	// cancels the request if ctx.Done is closed.
-	var results Results
+	var results pb.Results
 	err = httpDo(ctx, req, func(resp *http.Response, err error) error {
 		if err != nil {
 			return err
@@ -64,14 +58,18 @@ func Search(ctx context.Context, query string) (Results, error) {
 			return err
 		}
 		for _, res := range data.ResponseData.Results {
-			results = append(results,
-				Result{Title: res.TitleNoFormatting, URL: res.URL, Content: res.Content})
+			results.Res = append(results.Res,
+				&pb.Result{
+					Title:   res.TitleNoFormatting,
+					Url:     res.URL,
+					Content: res.Content,
+				})
 		}
 		return nil
 	})
 	// httpDo waits for the closure we provided to return, so it's safe to
 	// read results here.
-	return results, err
+	return &results, err
 }
 
 // httpDo issues the HTTP request and calls f with the response. If ctx.Done is

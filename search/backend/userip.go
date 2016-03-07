@@ -1,6 +1,6 @@
 // Package userip provides functions for extracting a user IP address from a
 // request and associating it with a Context.
-package search
+package backend
 
 import (
 	"fmt"
@@ -10,18 +10,27 @@ import (
 	"golang.org/x/net/context"
 )
 
-// FromRequest extracts the user IP address from req, if present.
-func FromRequest(req *http.Request) (net.IP, error) {
-	ip, _, err := net.SplitHostPort(req.RemoteAddr)
+// GetIP: ip address in the ip:port string
+func GetIP(ipport string) (net.IP, error) {
+	ip, _, err := net.SplitHostPort(ipport)
 	if err != nil {
-		return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+		return nil, fmt.Errorf("userip: %q cannot split IP IP:port", ipport)
 	}
 
 	userIP := net.ParseIP(ip)
 	if userIP == nil {
-		return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+		ips, err := net.LookupIP(ip)
+		if err != nil {
+			return nil, fmt.Errorf("userip: %q cannot parse IP string", ip)
+		}
+		userIP = ips[0]
 	}
 	return userIP, nil
+}
+
+// FromRequest extracts the user IP address from req, if present.
+func FromRequest(req *http.Request) (net.IP, error) {
+	return GetIP(req.RemoteAddr)
 }
 
 // The key type is unexported to prevent collisions with context keys defined in

@@ -11,19 +11,26 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/asarcar/go_test/search"
+	"github.com/asarcar/go_test/search/backend"
+	pb "github.com/asarcar/go_test/search/protos"
 
 	"golang.org/x/net/context"
 )
 
+const (
+	kServerHTTP = "localhost:8080"
+)
+
 func main() {
 	http.HandleFunc("/search", handleSearch)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Printf("Spawning HTTP Service [%s] test google search\n", kServerHTTP)
+	log.Fatal(http.ListenAndServe(kServerHTTP, nil))
 }
 
 // handleSearch handles URLs like /search?q=golang&timeout=1s by forwarding the
@@ -55,23 +62,23 @@ func handleSearch(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Store the user IP in ctx for use by code in other packages.
-	userIP, err := search.FromRequest(req)
+	userIP, err := backend.FromRequest(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx = search.NewContext(ctx, userIP)
+	ctx = backend.NewContext(ctx, userIP)
 
 	// Run the Google search and print the results.
 	start := time.Now()
-	results, err := search.Search(ctx, query)
+	results, err := backend.Search(ctx, query)
 	elapsed := time.Since(start)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := resultsTemplate.Execute(w, struct {
-		Results          search.Results
+		Results          *pb.Results
 		Timeout, Elapsed time.Duration
 	}{
 		Results: results,
@@ -88,12 +95,12 @@ var resultsTemplate = template.Must(template.New("results").Parse(`
 <head/>
 <body>
   <ol>
-  {{range .Results}}
-    <li>{{.Title}} - <a href="{{.URL}}">{{.URL}}</a></li>
+  {{range .Results.Res}}
+    <li>{{.Title}} - <a href="{{.Url}}">{{.Url}}</a></li>
     Snippet: {{.Content}}
   {{end}}
   </ol>
-  <p>{{len .Results}} results in {{.Elapsed}}; timeout {{.Timeout}}</p>
+  <p>{{len .Results.Res}} results in {{.Elapsed}}; timeout {{.Timeout}}</p>
 </body>
 </html>
 `))
