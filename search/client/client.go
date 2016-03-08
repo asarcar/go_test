@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"net"
 	"net/http"
 	"time"
 
-	"github.com/asarcar/go_test/search/backend"
 	pb "github.com/asarcar/go_test/search/protos"
 
 	"golang.org/x/net/context"
@@ -17,55 +15,46 @@ import (
 )
 
 const (
-	kClientAddr     = "localhost"
-	kServerAddr     = "localhost"
-	kClientHTTPPort = 8001
-	kServerRPCPort  = 4000
-	kSearchPath     = "/search"
-	kWatchPath      = "/watch"
+	kHTTPAddr   = "localhost"
+	kRPCAddr    = "localhost"
+	kRPCPort    = 5000
+	kHTTPPort   = 8800
+	kSearchPath = "/search"
+	kWatchPath  = "/watch"
 )
 
 // Server addr:port where server accepts RPC requests
-var serverRPC string
-var clientHTTP string
-var clientIP net.IP
-var client pb.GoogleClient
+var (
+	serverRPC string
+	httpAddr  string
+	client    pb.GoogleClient
+)
 
 func main() {
 	parseFlags()
 
 	fmt.Println("Client Spawned: Connecting to Server-RPC-Addr=\"" + serverRPC + "\"" +
-		": clientHTTPAddr=\"" + clientHTTP + "\"" +
-		": clientIP=\"" + clientIP.String() + "\"")
-
-	// Connect to Google Search RPC server:
-	conn, err := grpc.Dial(serverRPC, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
-	}
+		": HTTPAddr=\"" + httpAddr + "\"")
+	var conn *grpc.ClientConn
+	conn, client = dialRPCServer(serverRPC)
 	defer conn.Close()
-	client = pb.NewGoogleClient(conn)
+	spawnHTTPServer(httpAddr)
+}
 
+func spawnHTTPServer(httpAddr string) {
 	http.HandleFunc(kSearchPath, handleSearch)
 	http.HandleFunc(kWatchPath, handleWatch)
 
-	log.Fatal(http.ListenAndServe(clientHTTP, nil))
+	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }
 
-func parseFlags() {
-	serverRPCPtr := flag.String("rpcserver",
-		fmt.Sprintf("%s:%d", kServerAddr, kServerRPCPort),
-		"server RPC \"addr:port\" to connect")
-	clientHTTPPtr := flag.String("httpclient",
-		fmt.Sprintf("%s:%d", kClientAddr, kClientHTTPPort),
-		"client HTTP \"addr:port\" to connect")
-	flag.Parse()
-	serverRPC = *serverRPCPtr
-	clientHTTP = *clientHTTPPtr
-	var err error
-	if clientIP, err = backend.GetIP(clientHTTP); err != nil {
-		log.Fatalf("Bad client IP address: %v", err)
+func dialRPCServer(rpcAddr string) (*grpc.ClientConn, pb.GoogleClient) {
+	// Connect to Google Search RPC server:
+	conn, err := grpc.Dial(rpcAddr, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to dial: %v", err)
 	}
+	return conn, pb.NewGoogleClient(conn)
 }
 
 // handleSearch handles URLs like /search?q=golang&timeout=1s by forwarding the
@@ -127,6 +116,18 @@ func handleSearch(w http.ResponseWriter, req *http.Request) {
 
 // handleWatch
 func handleWatch(w http.ResponseWriter, req *http.Request) {
+}
+
+func parseFlags() {
+	serverRPCPtr := flag.String("rpcserver",
+		fmt.Sprintf("%s:%d", kRPCAddr, kRPCPort),
+		"server RPC \"addr:port\" to connect")
+	httpAddrPtr := flag.String("httpclient",
+		fmt.Sprintf("%s:%d", kHTTPAddr, kHTTPPort),
+		"HTTP \"addr:port\" to connect")
+	flag.Parse()
+	serverRPC = *serverRPCPtr
+	httpAddr = *httpAddrPtr
 }
 
 var resultsTemplate = template.Must(template.New("results").Parse(`

@@ -18,55 +18,46 @@ import (
 )
 
 const (
-	kProtocol       = "tcp"
-	kServerAddr     = "localhost"
-	kServerHTTPPort = 8000
-	kServerRPCPort  = 4000
+	kProtocol = "tcp"
+	kHTTPAddr = "localhost" // address of local HTTP service
+	kRPCAddr  = "localhost" // address of remote RPC service
+	kRPCPort  = 4000        // port of remote RPC service
+	kHTTPPort = 8000        // port of local HTTP service
 )
 
 // Server addr:port where server accepts RPC/HTTP requests
-var serverRPC string
-var serverHTTP string
+var (
+	serverRPC  string
+	serverHTTP string
+)
 
-type result struct {
-	res *pb.Result
-	err error
-}
+// server: implements GoogleServer
+type server struct{}
 
 func main() {
 	parseFlags()
 	fmt.Println("Server Spawned: RPC-Addr=\"" + serverRPC + "\"" +
 		": HTTP-Addr=\"" + serverHTTP + "\"")
-	lis, err := net.Listen(kProtocol, serverRPC)
+	// allows one to retrieve RPC visibility at /debug/requests and /debug/events
+	go spawnHTTPServer(serverHTTP)
+	spawnRPCServer(serverRPC, &server{})
+}
+
+func spawnHTTPServer(httpAddr string) {
+	err := http.ListenAndServe(httpAddr, nil)
+	log.Fatal(err)
+}
+
+func spawnRPCServer(rpcAddr string, svr_p *server) {
+	lis, err := net.Listen(kProtocol, rpcAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterGoogleServer(s, &server{})
-
-	// allows one to retrieve RPC visibility at /debug/requests and /debug/events
-	go func() {
-		err2 := http.ListenAndServe(serverHTTP, nil)
-		log.Fatal(err2)
-	}()
+	pb.RegisterGoogleServer(s, svr_p)
 
 	s.Serve(lis)
 }
-
-func parseFlags() {
-	serverRPCPtr := flag.String("rpcserver",
-		fmt.Sprintf("%s:%d", kServerAddr, kServerRPCPort),
-		"rpc server address \"addr:port\" to connect")
-	serverHTTPPtr := flag.String("httpserver",
-		fmt.Sprintf("%s:%d", kServerAddr, kServerHTTPPort),
-		"http server address \"addr:port\" to connect")
-	flag.Parse()
-	serverRPC = *serverRPCPtr
-	serverHTTP = *serverHTTPPtr
-}
-
-// server: implements GoogleServer
-type server struct{}
 
 func (s *server) Search(ctx context.Context, req *pb.Request) (*pb.Results, error) {
 	d := randomSleep(ctx)
@@ -91,4 +82,16 @@ func randomDuration(max time.Duration) time.Duration {
 	src := rand.NewSource(time.Now().UnixNano())
 	rand := rand.New(src)
 	return time.Duration(rand.Int63n(int64(max)))
+}
+
+func parseFlags() {
+	serverRPCPtr := flag.String("rpcserver",
+		fmt.Sprintf("%s:%d", kRPCAddr, kRPCPort),
+		"rpc server address \"addr:port\" to connect")
+	serverHTTPPtr := flag.String("httpserver",
+		fmt.Sprintf("%s:%d", kRPCAddr, kHTTPPort),
+		"http server address \"addr:port\" to connect")
+	flag.Parse()
+	serverRPC = *serverRPCPtr
+	serverHTTP = *serverHTTPPtr
 }
