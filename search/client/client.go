@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -32,9 +33,9 @@ var (
 
 func main() {
 	parseFlags()
-
 	fmt.Println("Client Spawned: Connecting to Server-RPC-Addr=\"" + serverRPC + "\"" +
 		": HTTPAddr=\"" + httpAddr + "\"")
+
 	var conn *grpc.ClientConn
 	conn, client = dialRPCServer(serverRPC)
 	defer conn.Close()
@@ -116,6 +117,64 @@ func handleSearch(w http.ResponseWriter, req *http.Request) {
 
 // handleWatch
 func handleWatch(w http.ResponseWriter, req *http.Request) {
+	// QUERY
+	query := req.FormValue("q")
+	if query == "" {
+		http.Error(w, "no query", http.StatusBadRequest)
+		return
+	}
+
+	// ctx is the Context for this handler. Calling cancel closes the
+	// ctx.Done channel, which is the cancellation signal for requests
+	// started by this handler.
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	// TIMEOUT
+	timeout, err := time.ParseDuration(req.FormValue("t"))
+	// The request has a timeout, so create a context that is
+	// canceled automatically when the timeout expires.
+	if err == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	defer cancel() // Cancel ctx as soon as handleSearch returns.
+
+	// WATCH
+	// Run the Google watch query and print the results.
+	start := time.Now()
+	stream, err := client.Watch(ctx, &pb.Request{Query: query})
+	for {
+		rpcres, rpcerr := stream.Recv()
+		// rpcerr == io.EOF fails: per rpc_util.go equivalent error identified
+		if rpcerr != nil && grpc.Code(rpcerr) == codes.OutOfRange {
+			w.Write([]byte(string("watch session ended")))
+			return
+		}
+		if rpcerr != nil {
+			// log.Print(rpcerr.Error())
+			http.Error(w, "RpcError: "+rpcerr.Error(), http.StatusInternalServerError)
+			return
+		}
+		elapsed := time.Since(start)
+
+		// BROWSER DISPLAY
+		if err := resultsTemplate.Execute(w, struct {
+			Results          *pb.Results
+			Timeout, Elapsed time.Duration
+		}{
+			Results: rpcres,
+			Timeout: timeout,
+			Elapsed: elapsed,
+		}); err != nil {
+			// log.Print(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 func parseFlags() {

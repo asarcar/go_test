@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"sync"
 
 	pb "github.com/asarcar/go_test/search/protos"
 
@@ -89,17 +91,18 @@ type result struct {
 	err error
 }
 
+type backendargs struct {
+	ctx     context.Context
+	index   int
+	backend pb.GoogleClient
+	req     *pb.Request
+	c       chan<- result
+}
+
 func (s *server) Search(ctx context.Context, req *pb.Request) (*pb.Results, error) {
 	c := make(chan result, len(s.backends))
 	for i, b := range s.backends {
-		go func(index int, backend pb.GoogleClient) {
-			if tr, ok := trace.FromContext(ctx); ok {
-				tr.LazyPrintf("Request: Search-Query \"%s\": Backend[%d]\n",
-					req.Query, index)
-			}
-			res, err := backend.Search(ctx, req)
-			c <- result{res, err}
-		}(i, b)
+		go searchBackend(&backendargs{ctx, i, b, req, c})
 	}
 	earliest_result := <-c
 	tr, ok := trace.FromContext(ctx)
@@ -108,6 +111,82 @@ func (s *server) Search(ctx context.Context, req *pb.Request) (*pb.Results, erro
 			req.Query, earliest_result.res.Res[0].Title)
 	}
 	return earliest_result.res, earliest_result.err
+}
+
+func searchBackend(args_p *backendargs) {
+	if tr, ok := trace.FromContext(args_p.ctx); ok {
+		tr.LazyPrintf("Request: Search-Query \"%s\": Backend[%d]\n",
+			args_p.req.Query, args_p.index)
+	}
+	res, err := args_p.backend.Search(args_p.ctx, args_p.req)
+
+	select {
+	case args_p.c <- result{res, err}:
+	case <-args_p.ctx.Done():
+		args_p.c <- result{nil, errors.New("Initiator: Cancelled Request")}
+	}
+	return
+}
+
+// Watch merges the result sent from multiple backends
+func (s *server) Watch(req *pb.Request, stream pb.Google_WatchServer) error {
+	c := make(chan result)
+
+	ctx := stream.Context()
+
+	var wg sync.WaitGroup
+	for i, b := range s.backends {
+		wg.Add(1)
+		go func(args_p *backendargs) {
+			defer wg.Done()
+			watchBackend(args_p)
+		}(&backendargs{ctx, i, b, req, c})
+	}
+
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
+
+	for search_res := range c {
+		// any error from any backend terminates the stream
+		// may optimize where we keep going on muxing the other streams
+		if search_res.err != nil {
+			return search_res.err
+		}
+		if err := stream.Send(search_res.res); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func watchBackend(args_p *backendargs) {
+	// return if we need to quit or write result to channel
+	write_f := func(res_p *result, args_p *backendargs) bool {
+		select {
+		case <-args_p.ctx.Done():
+		case args_p.c <- *res_p:
+			if res_p.err == nil {
+				return false
+			}
+		}
+		return true
+	}
+
+	stream, err := args_p.backend.Watch(args_p.ctx, args_p.req)
+	if err != nil {
+		write_f(&result{nil, err}, args_p)
+		return
+	}
+	for {
+		watch_res, err := stream.Recv()
+		if quit := write_f(&result{watch_res, err}, args_p); quit {
+			break
+		}
+	}
+	return
 }
 
 func parseFlags() {

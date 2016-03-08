@@ -70,8 +70,40 @@ func (s *server) Search(ctx context.Context, req *pb.Request) (*pb.Results, erro
 	}
 }
 
+func (s *server) Watch(req *pb.Request, stream pb.Google_WatchServer) error {
+	ctx := stream.Context()
+	for i := 0; i < 5; i++ {
+		d := randomSleep(ctx)
+		select {
+		case <-time.After(d):
+			err := stream.Send(&pb.Results{
+				Res: []*pb.Result{
+					&pb.Result{
+						Title: fmt.Sprintf("[%d] for [%s] from backend %s",
+							2*i, req.Query, serverRPC),
+						Url:     "http://bakwaas.com",
+						Content: "Na tera koi na mera koi",
+					},
+					&pb.Result{
+						Title: fmt.Sprintf("[%d] for [%s] from backend %s",
+							2*i+1, req.Query, serverRPC),
+						Url:     "http://jhakaas.com",
+						Content: "Sab mera sab tera",
+					},
+				},
+			})
+			if err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
 func randomSleep(ctx context.Context) time.Duration {
-	d := randomDuration(100 * time.Millisecond)
+	d := randomDuration(1000 * time.Millisecond)
 	if tr, ok := trace.FromContext(ctx); ok {
 		tr.LazyPrintf("sleeping for " + d.String())
 	}
