@@ -7,13 +7,15 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 const (
-	kListenAddr      = "localhost:4000"
+	kListenAddr      = "localhost:5432"
 	kEchoWebFileName = "echoweb.html"
 	kRootUrl         = "/"
 	kEchoUrl         = "/echo"
+	kEchoHtmlDir     = "/src/github.com/asarcar/go_test/echoweb/html/"
 )
 
 var (
@@ -39,16 +41,17 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseFlags() string {
-	dPtr := flag.String("d",
-		"/home/asarcar/git/go_test/src/github.com/asarcar/go_test/echoweb/html/",
-		"full path to directory where template html files exist\n")
+	dPtr := flag.String("d", kEchoHtmlDir,
+		"relative to GOPATH the directory where template html files exist\n")
 	flag.Parse()
 
 	return *dPtr
 }
 
 func main() {
-	htmlDir := parseFlags()
+        dir := parseFlags()
+	goPathDir := os.Getenv("GOPATH")
+	htmlDir := goPathDir + dir 
 	echoWebTemplate = getTemplate(htmlDir, kEchoWebFileName)
 
 	log.Println("EchoWeb: started at " + kListenAddr)
