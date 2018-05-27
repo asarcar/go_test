@@ -52,3 +52,39 @@ func TestComposeFn(t *testing.T) {
 			in, x1, out1, in, x2, out2)
 	}
 }
+
+func TestMedian(t *testing.T) {
+	const delta = 0.0001
+	var in11, in12 = []int{}, []int{4, 10, 12}
+	const out1 = 10.0
+
+	var out, err = Median(in11, in12)
+	if err != nil || out <= out1-delta || out >= out1+delta {
+		t.Errorf("Median %v,%v is %.1f should be %.1f",
+			in11, in12, out, out1)
+	}
+
+	var in21, in22 = []int{3, 7, 20, 50}, []int{}
+	const out2 = 13.5
+	out, err = Median(in21, in22)
+	if err != nil || out <= out2-delta || out >= out2+delta {
+		t.Errorf("Median %v,%v is %.1f should be %.1f",
+			in21, in22, out, out2)
+	}
+
+	var in31, in32 = []int{3, 7, 20, 50}, []int{4, 10, 12}
+	const out3 = 10.0
+	out, err = Median(in31, in32)
+	if err != nil || out <= out3-delta || out >= out3+delta {
+		t.Errorf("Median %v,%v is %.1f should be %.1f",
+			in31, in32, out, out3)
+	}
+
+	var in41, in42 = []int{1, 100}, []int{3, 7, 9, 15, 18, 21, 28}
+	const out4 = 15.0
+	out, err = Median(in41, in42)
+	if err != nil || out <= out4-delta || out >= out4+delta {
+		t.Errorf("Median %v,%v is %.1f should be %.1f",
+			in41, in42, out, out4)
+	}
+}

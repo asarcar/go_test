@@ -10,4 +10,5 @@ func main() {
 	misc.DumpGreek()
 	misc.DumpTypePrint(float32(3.200123432), 10, "hello raju", float64(3.200123432))
 	misc.DumpMarkovWords()
+	misc.Median([]int{3, 7, 20, 50}, []int{4, 10, 12, 15})
 }
