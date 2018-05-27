@@ -11,11 +11,19 @@ import (
 	"net/url"
 )
 
+// Expose the local webserver to outside world:
+// > ngrok http 4000
+// Copy the displayed URL e.g. https://****.ngrok.io to
+// FB Messenger Callback URL for WebHook
+// as long as the PAGE
 const (
 	kDomain    string = "localhost:4000"
 	kPackage   string = "github.com/asarcar/go_test.www"
 	kDomainT   string = "localhost:4001"
 	kMaxMsgLen int    = 300
+	kTokenKey  string = "hub.verify_token"
+	kExpToken  string = "from_ory_qv_vishal"
+	kChalngKey string = "hub.challenge"
 )
 
 var evlog trace.EventLog
@@ -88,10 +96,10 @@ func PayloadFunc(w http.ResponseWriter, r *http.Request) {
 // SgmhHHDZCZB3JrYLClHKEOSNXhz29KKb8uyJpHicvgZDZD"
 func WebHookGet(w http.ResponseWriter, r *http.Request) {
 	m, _ := url.ParseQuery(r.URL.RawQuery)
-	tokenKey := "hub.verify_token"
-	expTokenVal := "foraysys_from_ory_and_vishal"
+	tokenKey := kTokenKey
+	expTokenVal := kExpToken
 	tokenVal := m.Get(tokenKey)
-	challengeKey := "hub.challenge"
+	challengeKey := kChalngKey
 	challengeVal := m.Get(challengeKey)
 	evlog.Printf("<" + tokenKey + "," + tokenVal + ">" +
 		" : <" + challengeKey + "," + challengeVal + ">")
