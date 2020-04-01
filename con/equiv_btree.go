@@ -84,7 +84,7 @@ func main() {
 	// go StuffChannel(2, ch)
 	// go Walk(&tree.Tree{&tree.Tree{nil, 5, nil}, 10, &tree.Tree{nil, 15, nil}}, ch)
 	go Walk(tree.New(2), ch)
-	fmt.Println("Tree1:", DumpTree(tree.New(1)))
+	fmt.Println("Tree(1):", DumpTree(tree.New(1)))
 	fmt.Println("Tree(2):", DumpChannel(ch))
 	fmt.Println("Tree(1) eq Tree(1):", Same(tree.New(1), tree.New(1)))
 	fmt.Println("Tree(1) eq Tree(2):", Same(tree.New(1), tree.New(2)))
