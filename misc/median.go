@@ -37,8 +37,8 @@ func Median(a []int, b []int) (float32, error) {
 		return 0.0, err2
 	}
 
-	fmt.Printf("Median of two sorted arrays %v and %v is %.1f\n",
-		a, b, m)
+//	fmt.Printf("Median of two sorted arrays %v and %v is %.1f\n",
+//		a, b, m)
 	return m, err2
 }
 

@@ -1,7 +1,8 @@
-package main
+package misc
+// package main
 
 import(
-    "flag"
+//  "flag"
     "fmt"
 )
 
@@ -59,9 +60,12 @@ func (p *Par) String() string {
      return s + "]\n"
 }
 
-func main() {
-     nPtr := flag.Int("n", 2, "number of brackets")
-     flag.Parse()
-     p := Par{*nPtr}
-     fmt.Printf("n=%d: brackets %v", *nPtr, p.String())
-}
+// func main() {
+//     nPtr := flag.Int("n", 2, "number of brackets")
+//     flag.Parse()
+//     if (n <= 0) {
+//     	return
+//     }
+//     p := Par{*nPtr}
+//     fmt.Printf("n=%d: brackets %v", *nPtr, p.String())
+// }

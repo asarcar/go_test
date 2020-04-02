@@ -88,3 +88,29 @@ func TestMedian(t *testing.T) {
 			in41, in42, out, out4)
 	}
 }
+
+func TestGenParen(t *testing.T) {
+     n   := 1
+     str := "[\n  ()\n]\n"
+     p   := Par{n}
+     s   := p.String()
+     if s != str {
+     	t.Errorf("Par(%d) is '%s' but should be '%s'", n, s, str)
+     }
+
+     n   = 2
+     str = "[\n  ()()\n  (())\n]\n"
+     p   = Par{n}
+     s   = p.String()
+     if s != str {
+     	t.Errorf("Par(%d) is '%s' but should be '%s'", n, s, str)
+     }
+
+     n   = 3
+     str = "[\n  ()()()\n  ()(())\n  (())()\n  (()())\n  ((()))\n]\n"
+     p   = Par{n}
+     s   = p.String()
+     if s != str {
+     	t.Errorf("Par(%d) is '%s' but should be '%s'", n, s, str)
+     }
+}
