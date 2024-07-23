@@ -2,13 +2,8 @@ package main
 
 import (
 	"bufio"
-	// TBD: migrate to github.com/golang/freetype
-	"code.google.com/p/freetype-go/freetype/raster"
-	// TBD: migrate to golang.org/oauth2/google:
-	"code.google.com/p/goauth2/oauth"
 	"errors"
 	"flag"
-	"google.golang.org/api/drive/v2"
 	"html/template"
 	"image"
 	"image/color"
@@ -21,6 +16,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/golang/freetype/raster"
+	"google.golang.org/api/drive/v2"
 )
 
 // Example: Google I/O 2011 Go.
@@ -141,10 +139,13 @@ func edit(w http.ResponseWriter, r *http.Request) {
 	gEditTemplate.Execute(w, r.FormValue("id"))
 }
 
-//                       |<----- Img Def ----->|
+//	|<----- Img Def ----->|
+//
 // 4a. Client == GET /img?id=ID&x=X&y=Y&s=S&d=D ===> Moustachio
 // e.g: localhost:4000/img?id=173604969&x=74000&y=140000&s=2000&d=5
-//      This occurs each time the moustache is adjusted
+//
+//	This occurs each time the moustache is adjusted
+//
 // 4b. Client <==== IMG with moustache drawn  ====== Moustachio
 func img(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "image/jpeg")
@@ -159,8 +160,9 @@ func img(w http.ResponseWriter, r *http.Request) {
 }
 
 // AuthURL: Target of initial request. Handles active session lookup,
-//          authenticating the user and user consent. Result include
-//          access tokens, refresh tokens, and authorization codes.
+//
+//	authenticating the user and user consent. Result include
+//	access tokens, refresh tokens, and authorization codes.
 var config = &oauth.Config{
 	ClientId:     "311569668069-qith1651t1jgh9e7qck9n9mhv7td37ug.apps.googleusercontent.com",
 	ClientSecret: "PiSJX4iqm0COBYXr7DiVRW3j",
@@ -185,7 +187,6 @@ type FileParams struct {
 	ID, Title, Description, MimeType string
 }
 
-//
 // post handler: accepts authentication code and image state from the OAuth
 // service, exchanges the code for an OAut authentication token, and
 // posts to Buzz
