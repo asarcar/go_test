@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 )
 
@@ -9,12 +10,19 @@ const (
 )
 
 func main() {
+	sharedPtr := flag.Bool("shared", false, "boolean - closure uses shared variable when true")
+	flag.Parse()
+
 	var ch chan int = make(chan int, MAXI)
 	var v int
 	for i := 0; i < MAXI; i++ {
 		v = i * 2 // closure refers to a variable that keeps changing
 		go func() {
-			ch <- v
+			if *sharedPtr == true {
+				ch <- v
+			} else {
+				ch <- i * 2
+			}
 		}()
 	}
 	for i := 0; i < MAXI; i++ {
@@ -27,4 +35,5 @@ func main() {
 			}
 		}
 	}
+	close(ch)
 }
