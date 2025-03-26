@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
-	"golang.org/x/net/websocket"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
+
+	"golang.org/x/net/websocket"
 )
 
 const (
@@ -49,9 +50,9 @@ func parseFlags() string {
 }
 
 func main() {
-        dir := parseFlags()
+	dir := parseFlags()
 	goPathDir := os.Getenv("GOPATH")
-	htmlDir := goPathDir + dir 
+	htmlDir := goPathDir + dir
 	echoWebTemplate = getTemplate(htmlDir, kEchoWebFileName)
 
 	log.Println("EchoWeb: started at " + kListenAddr)
